@@ -72,6 +72,7 @@ flowchart LR
 
 &#x20;   A -.->|Repudiation| M
 
+```
 Threat-to-Control Mapping
 
 Threat	Attack Point	Primary Control
