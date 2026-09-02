@@ -1,282 +1,149 @@
-\# Application Architecture \& Data Flow
+# Application Architecture & Data Flow
 
+## System Architecture
 
-
-\## System Architecture
-
-
-
-The following diagram represents the application components and the primary data flows considered during the threat modeling exercise.
-
-
+The following diagram represents the application components and primary data flows considered during the threat modeling exercise.
 
 ```mermaid
-
 flowchart TD
-
-&#x20;   U\[User] --> B\[Web Browser]
-
-
-
-&#x20;   B -->|HTTPS Request| WA\[Web Application]
-
-
-
-&#x20;   WA --> AUTH\[Authentication]
-
-&#x20;   WA --> APP\[Application Logic]
-
-&#x20;   WA --> VAL\[Input Validation]
-
-
-
-&#x20;   AUTH --> DB\[(Database)]
-
-&#x20;   APP --> DB
-
-
-
-&#x20;   AUTH --> LOG\[Security Logging]
-
-&#x20;   APP --> LOG
-
-
-
-&#x20;   DB --> DATA\[User \& Application Data]
-
-
-
-&#x20;   subgraph TB1\["Trust Boundary: Internet / Application"]
-
-&#x20;       B
-
-&#x20;       WA
-
-&#x20;   end
-
-
-
-&#x20;   subgraph TB2\["Trust Boundary: Application / Data Layer"]
-
-&#x20;       AUTH
-
-&#x20;       APP
-
-&#x20;       VAL
-
-&#x20;       DB
-
-&#x20;       LOG
-
-&#x20;   end
-
-Components
-
-1\. User
-
-
-
-The user interacts with the application through a web browser.
-
-
-
-User-controlled input is considered untrusted and must be validated by the application.
-
-
-
-2\. Web Browser
-
-
-
-The browser sends authentication requests and application requests to the web application.
-
-
-
-Session information may be maintained using cookies.
-
-
-
-3\. Web Application
-
-
-
-The web application receives HTTP requests and routes them to the appropriate application functionality.
-
-
-
-This component represents the primary application attack surface.
-
-
-
-4\. Authentication
-
-
-
-The authentication component verifies user credentials and manages authenticated sessions.
-
-
+    U[User / Browser]
+    W[Web Interface]
+    A[Authentication Layer]
+    APP[Application Server]
+    V[Input Validation]
+    DB[(Database)]
+    L[Security Logging]
+
+    U -->|HTTPS Request| W
+    W -->|Login / Application Request| A
+    A -->|Authenticated Request| APP
+    APP --> V
+    V --> DB
+    APP --> DB
+    A --> L
+    APP --> L
+    DB -->|Application Data| APP
+    APP -->|Response| W
+    W -->|HTTPS Response| U
+
+    subgraph TB1[Trust Boundary: Internet]
+        U
+    end
+
+    subgraph TB2[Trust Boundary: Application / Data Layer]
+        W
+        A
+        APP
+        V
+        DB
+        L
+    end
+```
+Application Components
+1. User / Browser
+
+The user interacts with the application through a web browser. Authentication requests and application requests originate from this component.
+
+2. Web Interface
+
+The web interface receives user requests and displays application responses. It represents the client-facing portion of the application.
+
+3. Authentication Layer
+
+The authentication layer validates user credentials and establishes authenticated sessions.
 
 Security considerations include:
 
-
-
-Password protection
-
-Authentication validation
-
+Credential protection
+Authentication bypass
+Brute-force attempts
 Session management
+Account enumeration
+4. Application Server
 
-Login rate limiting
-
-Account protection
-
-5\. Input Validation
-
-
-
-User-controlled input is validated before being processed by application logic or database operations.
-
-
+The application server processes authenticated requests and performs application business logic.
 
 Security considerations include:
-
-
-
-Input type validation
-
-Length restrictions
-
-Malicious input handling
-
-Server-side validation
-
-6\. Application Logic
-
-
-
-The application logic processes authenticated requests and performs business operations.
-
-
-
-Security considerations include:
-
-
-
-Authorization
-
-Access control
-
-Business logic validation
-
-Secure error handling
-
-7\. Database
-
-
-
-The database stores user and application information.
-
-
-
-Security considerations include:
-
-
-
-Restricted database access
-
-Parameterized queries
-
-Data integrity
-
-Protection of sensitive information
-
-8\. Security Logging
-
-
-
-Security-relevant events are recorded for monitoring and investigation.
-
-
-
-Examples include:
-
-
-
-Successful authentication
-
-Failed authentication
 
 Authorization failures
+Injection attacks
+Improper input handling
+Business logic abuse
+Information disclosure
+5. Input Validation
 
-Security-related application events
+Input validation checks data received from users before it is processed or stored.
 
-Trust Boundaries
+Security controls include:
 
-TB1 — Internet / Application Boundary
+Input length restrictions
+Expected data validation
+Rejection of malformed input
+Server-side validation
+6. Database
 
+The database stores application data and user-related information.
 
+Security considerations include:
 
-The boundary between the user's browser and the web application represents an untrusted network boundary.
+Unauthorized database access
+SQL injection
+Sensitive data exposure
+Excessive database privileges
+Data integrity
+7. Security Logging
 
+Security events are recorded for monitoring, investigation, and incident response.
 
+Important events include:
 
-Requests crossing this boundary should be treated as potentially malicious.
-
-
-
-TB2 — Application / Data Layer Boundary
-
-
-
-The boundary between application components and the database/logging layer protects sensitive backend resources.
-
-
-
-Only authorized application operations should cross this boundary.
-
-
-
+Successful authentication
+Failed authentication
+Authorization failures
+Suspicious application activity
+Security-relevant errors
 Primary Data Flows
+Flow	Description	Security Consideration
+User → Web Interface	User sends application request	TLS and input validation
+Web Interface → Authentication	Login request	Credential protection
+Authentication → Application Server	Authenticated request	Session validation
+Application Server → Validation	User-controlled input	Server-side validation
+Application Server → Database	Data access	Authorization and least privilege
+Application Server → Logging	Security event	Log integrity
+Application Server → Web Interface	Application response	Information disclosure
+Trust Boundaries
+Internet Boundary
 
-Flow	Source	Destination	Security Consideration
+The user and browser are considered outside the application's trusted environment.
 
-DF-001	User	Web Browser	User input is untrusted
+Application / Data Boundary
 
-DF-002	Browser	Web Application	HTTPS and session security
+The web interface, authentication layer, application server, validation layer, database, and logging components form the application's trusted processing environment.
 
-DF-003	Web Application	Authentication	Credential validation
+Threat modeling focuses particularly on data crossing these boundaries.
 
-DF-004	Application	Database	Authorization and query security
+Security Design Considerations
 
-DF-005	Application	Security Logs	Protect audit information
+The assessment considers:
 
-DF-006	Database	Application	Access control and data integrity
+Authentication
+Authorization
+Session management
+Input validation
+Database security
+Data protection
+Security logging
+Availability
+Information disclosure
+Threat Modeling Relationship
 
-Threat Modeling Notes
+The architecture is used as the basis for identifying STRIDE threats.
 
+Each data flow and application component is evaluated for possible:
 
-
-The architecture was created to identify:
-
-
-
-External entry points
-
-Trust boundaries
-
-Sensitive assets
-
-Data flows
-
-Authentication points
-
-Authorization points
-
-Backend data stores
-
-Security monitoring points
-
-
-
-These components provide the basis for the STRIDE analysis documented in ../threat-model.md.
-
+Spoofing
+Tampering
+Repudiation
+Information Disclosure
+Denial of Service
+Elevation of Privilege
